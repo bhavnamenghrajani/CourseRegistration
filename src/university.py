@@ -115,17 +115,16 @@ class Semester(object):
 
 class CourseSchedule(object):
     """"Associate a schedule to store the courses offered per semester"""
-    terms = [
-         "Fall 2015",
-         "Spring 2016",
-         "Summer 2016",
-         "Fall 2016"
-    ]
 
     def __init__(self, semester):
       """"Assign semester to the schedule and initialize the course offering list"""
-      self.semester = self.terms[semester]
       self.course_offerring = []
+      try :
+        self.semester = Semester.terms[semester]
+      except IndexError:
+          print "The term has not been set"
+
+
 
     def __str__(self):
       return "Course offered for Semester: {}".format(self.semester)
@@ -153,17 +152,16 @@ class CourseOffering(object):
 
     def assign_seat(self):
         """"Adds seat to the seats list"""
-        seat = Seats("Assigned")
-        self.seats.append(seat)
-        return seat
-
-
+        if self.available_seats > 0:
+            seat = Seats("Assigned")
+            self.seats.append(seat)
+            self.available_seats -= 1
+            return seat
+        else:
+            print "No more seats are available"
 
     def __str__(self):
       return "Course Name: {}|| Course Professor: {} || Available seats: {} ".format(self.course.name, self.professor, self.available_seats)
-
-
-
 
 class Seats(object):
     """"A class to store the seat related information
@@ -173,10 +171,14 @@ class Seats(object):
     """
     seat_no = 1
 
+
     def __init__(self, status):
         """"Intialize the status of seat"""
         self.status = status
         Seats.seat_no += 1
+
+    def add_course_offering(self, course_offering):
+        self.course_offering = course_offering
 
 
 class Transcript(object):
@@ -202,14 +204,24 @@ class CourseLoad(object):
     """
     def __init__(self, semester):
         """Initializes course and seat assignment list"""
-        self.semester = Semester.terms[semester]
-        self.seat_assignments = []
+        try :
+            self.semester = Semester.terms[semester]
+            self.seat_assignments = []
+        except IndexError:
+            print "Term has not been set"
 
     def add_seat_assignment(self):
         """Append a seat_assignment to the list- seat_assignments"""
         seat_assignment = SeatAssignment()
         self.seat_assignments.append(seat_assignment)
         return seat_assignment
+
+    def drop_seat_assignment(self,seat_assignment):
+        seat_old = seat_assignment.seat
+        course_offered = seat.course_offering
+        course_offered.seats.remove(seat_old)
+        course_offered.available_seats += 1
+        self.seat_assignments.remove(seat_assignment)
 
 class SeatAssignment(object):
     """"A class to store the individual seat assigned - the seat of a course and the grade
@@ -244,6 +256,11 @@ class CourseCatalog(object):
         course = Course(course)
         self.courses.append(course)
         return course
+
+    def drop_courses(self, course):
+        """"Removes course from the catalog"""
+        self.courses.remove(course)
+
 
 class Course(object):
     """"
@@ -287,7 +304,9 @@ class Student(object):
         transcript = self.transcript
         print("Found transcript")
         for course_load in transcript.course_load_list:
-            print("Semester registered for {}".format(course_load.semester))
+            print "Semester registered for {}".format(course_load.semester)
+            for assignment in course_load.seat_assignments:
+                print "Grade for Course {} is {} ".format(assignment.seat.course_offering.course.name, assignment.grade)
 
 
     def __str__(self):
@@ -295,36 +314,88 @@ class Student(object):
 
 
 if __name__ == "__main__":
-    x = University("Northeastern")
+    print "*************Adding university****************"
+    x = University("Study Abroad University")
+    print "*************Adding Colleges******************"
+    print "Adding College of Engineering (COE)"
     c1 = x.add_colleges("COE")
+    print "************Adding College of Business and Management Studies*********"
     c2 = x.add_colleges("Business")
+    print "************Adding department Information Systems to COE*************"
     department = c1.add_department("Information Systems")
+
+    print "**********Creating a course catalog*********************"
     course_catalog = CourseCatalog()
+    print "**********Adding course DBMS to the catalog*************"
     course1 = course_catalog.add_courses("DBMS")
+    print "***********Adding course web design to the catalog********"
     course2 = course_catalog.add_courses("Web Design")
+
+    print "**************Adding the course catalog to the department Information Systems****************"
     department.add_course_catalog(course_catalog)
 
-    print("Iterating the list")
+    print "*************Let's review the course catalog for departemnt Information System***************"
     department.view_course_catalog()
-    cs1 = CourseSchedule(0)
-    co1 = CourseOffering(course1,"Yusuf Ozbek",40)
-    co2 = CourseOffering(course2,"Chaiya",20)
+
+    print "***************Scheduling courses Fall 2015*********************"
+    cs1 = CourseSchedule(1)
+
+    print "*******************Assigning courses and professor to the scheduler***********"
+    co1 = CourseOffering(course1,"Dr. Arnold",40)
+    co2 = CourseOffering(course2,"Mr. Dave",20)
+
     cs1.course_offerring.append(co1)
     cs1.course_offerring.append(co2)
+
+    print "*******************Final assignment of the schedule to the department responsible************"
     department.course_schedule_list.append(cs1)
+
+    print "******************Printing schedule*********************"
     department.view_course_offering()
-    print("Adding students")
-    s1 = Student("Bhavna", "Menghrajani")
-    s2 = Student("Pooja", "Chainani")
+
+    print "*****************Adding students**********************"
+    s1 = Student("Bbbbb", "Mmmmm")
+    s2 = Student("Ppppp", "Ccccc")
+
+    print "*******************Adding students to the college COE******************"
     c1.add_student(s1)
     c1.add_student(s2)
+
+    print "***********************Printing student details*******************"
     c1.view_students()
+
+    print "**********************Creating course load of student Bbbb for Fall 2015*****************"
     cL = s1.transcript.add_course_load(0)
+
+    print "*******************Allocating seat for course offered DBMS*********************"
     seat = co1.assign_seat()
+    seat.add_course_offering(co1)
+
+    print "*******************Allocating seat for course offered Web Design*********************"
+    seat2 = co2.assign_seat()
+    seat2.add_course_offering(co2)
+
+    print "********************Assigning the seat to student for DBMS**********************"
     seat_assignment = cL.add_seat_assignment()
     seat_assignment.add_grade("A")
     seat_assignment.assign_seat_to_student(seat)
+
+    print "********************Assigning the seat to student for Web Design**********************"
+
+    seat_assignment2 = cL.add_seat_assignment()
+    seat_assignment2.add_grade("B")
+    seat_assignment2.assign_seat_to_student(seat2)
+
+    print "**********************View grades of student 1***********************"
     s1.view_grades_by_sem()
+
+    print "*******Drop course DBMS*******"
+    cL.drop_seat_assignment(seat_assignment)
+
+    print "*******Reprinting grades******"
+    s1.view_grades_by_sem()
+
+    print "*****************"
     print("Viewing course offering to student 1")
     x.retrieve_college_details()
 
